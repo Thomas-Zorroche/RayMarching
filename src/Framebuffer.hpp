@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 
 
 class Framebuffer
@@ -17,7 +18,7 @@ public:
 
 	void free();
 
-	void update();
+	void update(const std::vector<unsigned char>& buffer);
 
 private:
 	unsigned int _id;

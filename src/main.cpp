@@ -6,6 +6,7 @@
 
 #include "Editor.hpp"
 #include "Framebuffer.hpp"
+#include "RayMarching.hpp"
 
 int main(void)
 {
@@ -33,8 +34,11 @@ int main(void)
         return -1;
     }
 
-    Framebuffer fbo = Framebuffer(600, 480);
-    fbo.update();
+
+    int viewer3DWidth = 600;
+    int viewer3DHeight = 400;
+    Framebuffer fbo = Framebuffer(viewer3DWidth, viewer3DHeight);
+    RayMarchingManager rayMarching(viewer3DWidth, viewer3DHeight);
 
     // Initialize ImGui
     initEditor(window);
@@ -45,6 +49,10 @@ int main(void)
         /* Render here */
         glClearColor(0.1, 0.15f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
+
+        rayMarching.update();
+
+        fbo.update(rayMarching.getBuffer());
 
         drawEditor(fbo);
         renderEditor();
