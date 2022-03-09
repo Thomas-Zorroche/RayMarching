@@ -87,16 +87,17 @@ RayMarchingManager::RayMarchingManager(int width, int height)
         //    position   size       color
         Shape({0, 0, 0}, { 1, 1, 1 }, {255, 150, 0})
     });
+
+    _rayOrigin = _camera.getCameraToWorld() * glm::vec4(0, 0, 0, 1); // TODO
 }
 
 
 Ray RayMarchingManager::createCameraRay(glm::vec2 uv)
 {
-    glm::vec3 origin = _camera.getCameraToWorld() * glm::vec4(0, 0, 0, 1); // TODO
     glm::vec3 direction = _camera.getCameraInverseProjection() * glm::vec4(uv, 0, 1);
     direction = _camera.getCameraToWorld() * glm::vec4(direction, 0);
     direction = normalize(direction);
-    return Ray(origin, direction);
+    return Ray(_rayOrigin, direction);
 }
 
 glm::vec4 RayMarchingManager::getSceneInfo(glm::vec3 eye)
@@ -142,7 +143,9 @@ void RayMarchingManager::update()
 {
     glm::vec4 sceneInfo;
     int pixelID = 0;
-    for (int bufferID = 0; bufferID < _bufferSize; bufferID += 3)
+
+    int step = 10;
+    for (int bufferID = 0; bufferID < _bufferSize; bufferID += step * 3)
     {
         float rayDst = 0;
         int marchSteps = 0;
@@ -188,6 +191,9 @@ void RayMarchingManager::update()
             ray.origin += ray.direction * dst;
             rayDst += dst;
         }
-        pixelID++;
+        pixelID += step;
     }
+
+ /*   if (currentSample < 10)
+        currentSample++;*/
 }

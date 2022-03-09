@@ -5,7 +5,7 @@
 #include "glm/glm.hpp"
 #include "glm/gtx/transform.hpp"
 
-Framebuffer::Framebuffer(float width, float height)
+Framebuffer::Framebuffer(float width, float height, const std::vector<unsigned char>& buffer)
 {
     _width = width;
     _height = height;
@@ -16,7 +16,7 @@ Framebuffer::Framebuffer(float width, float height)
         // Create Texture
         glGenTextures(1, &_textureID);
         glBindTexture(GL_TEXTURE_2D, _textureID);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, buffer.data());
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -73,18 +73,9 @@ void Framebuffer::free()
 
 void Framebuffer::update(const std::vector<unsigned char>& buffer)
 {
-    glGenFramebuffers(1, &_id);
-    glBindFramebuffer(GL_FRAMEBUFFER, _id);
-    {
-        glBindTexture(GL_TEXTURE_2D, _textureID);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, _width, _height, 0, GL_RGB, GL_UNSIGNED_BYTE, buffer.data());
-        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        // Attach Texture to the framebuffer
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _textureID, 0);
-    }
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindTexture(GL_TEXTURE_2D, _textureID);
+    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, _width, _height, 0, GL_RGB, GL_UNSIGNED_BYTE, buffer.data());
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, _width, _height, GL_RGB, GL_UNSIGNED_BYTE, buffer.data());
 }
 
 

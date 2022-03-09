@@ -73,6 +73,10 @@ private:
     int _nbpixels;
     int _bufferSize;
 
+    glm::vec3 _rayOrigin;
+
     std::vector<unsigned char> _buffer;
+
+    int currentSample = 0;
 };
 

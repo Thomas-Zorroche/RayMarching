@@ -6,7 +6,7 @@
 class Framebuffer
 {
 public:
-	Framebuffer(float width = 64.0f, float height = 64.0f);
+	Framebuffer(float width, float height, const std::vector<unsigned char>& buffer);
 
 	unsigned int getId() const { return _id; }
 	unsigned int getTextureId() const { return _textureID; }

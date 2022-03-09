@@ -37,8 +37,8 @@ int main(void)
 
     int viewer3DWidth = 600;
     int viewer3DHeight = 400;
-    Framebuffer fbo = Framebuffer(viewer3DWidth, viewer3DHeight);
     RayMarchingManager rayMarching(viewer3DWidth, viewer3DHeight);
+    Framebuffer fbo = Framebuffer(viewer3DWidth, viewer3DHeight, rayMarching.getBuffer());
 
     // Initialize ImGui
     initEditor(window);
