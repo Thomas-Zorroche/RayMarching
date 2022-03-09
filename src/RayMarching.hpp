@@ -33,8 +33,8 @@ struct Shape
 
 struct RayMarchingSettings
 {
-	const float maxDst = 6.0f;
-	const float epsilon = 0.01f;
+	const float maxDst = 10.0f;
+	const float epsilon = 0.05f;
 
 	bool positionLight = false;
 	glm::vec3 Light = { 0.9, 0.9, 0.9 };
@@ -59,6 +59,15 @@ public:
     void free();
 
     Framebuffer& getFbo() { return _fbo; }
+    Camera& getCamera() { return _camera; }
+
+    int getCurrentSample() const { return currentSample; }
+
+    void NeedUpdate()
+    {
+        currentSample = 0;
+        _rayOrigin = _camera.getCameraToWorld() * glm::vec4(0, 0, 0, 1);
+    }
 
     const std::vector<unsigned char>& getBuffer() const {
         return _buffer;
@@ -86,7 +95,7 @@ private:
     std::vector<Ray> _rays;
 
     int currentSample = 0;
-    const int maxSamples = 10;
+    const int maxSamples = 20;
 
     bool _needToUpdateRays = true; // If camera move, we must compute new rays
 };

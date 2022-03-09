@@ -1,6 +1,7 @@
 #include "RayMarching.hpp"
 
 #include "glm/gtx/transform.hpp"
+#include <omp.h>
 
 
 float saturate(float x)
@@ -162,11 +163,12 @@ void RayMarchingManager::update()
     int pixelID = 0;
     int rayID = 0;
     
-    _buffer.empty();
-
     int step = maxSamples - currentSample;
+
+    //#pragma omp for shared(step) private(pixelID, rayID)
     for (int bufferID = 0; bufferID + 2 < _bufferSize; bufferID += step * 3)
     {
+        bool hit = false;
         float rayDst = 0;
         int marchSteps = 0;
 
@@ -214,6 +216,7 @@ void RayMarchingManager::update()
                 _buffer[bufferID] = (unsigned char)(col.r * lighting);
                 _buffer[bufferID + 1] = (unsigned char)(col.g * lighting);
                 _buffer[bufferID + 2] = (unsigned char)(col.b * lighting);
+                hit = true;
 
                 break;
             }
@@ -221,6 +224,14 @@ void RayMarchingManager::update()
             ray.origin += ray.direction * dst;
             rayDst += dst;
         }
+
+        if (!hit)
+        {
+            _buffer[bufferID] =    (unsigned char)(120);
+            _buffer[bufferID + 1] = (unsigned char)(120);
+            _buffer[bufferID + 2] = (unsigned char)(120);
+        }
+
         pixelID += step;
         rayID++;
     }

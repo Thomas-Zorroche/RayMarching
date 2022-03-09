@@ -16,9 +16,14 @@ public:
 		_center = { 0, 0, 0 };
 		_up = { 0, 1, 0 };
 
-		_cameraToWorld = glm::lookAt(_eye, _center, _up);
 		const auto projMatrix = glm::perspective(70.f, float(_width) / _height, 0.001f, 1000.0f);
 		_cameraInverseProjection = glm::inverse(projMatrix);
+		updateCamera();
+	}
+
+	void updateCamera()
+	{
+		_cameraToWorld = glm::lookAt(_eye, _center, _up);
 	}
 
 	const glm::mat4& getCameraToWorld() const { return _cameraToWorld; }

@@ -51,7 +51,7 @@ int main(void)
 
         rayMarching.update();
 
-        drawEditor(rayMarching.getFbo());
+        drawEditor(rayMarching);
         renderEditor();
 
         /* Swap front and back buffers */

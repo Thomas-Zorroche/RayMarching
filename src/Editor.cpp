@@ -21,7 +21,7 @@ void initEditor(GLFWwindow* window)
 }
 
 
-void drawEditor(Framebuffer& fbo)
+void drawEditor(RayMarchingManager& rayMarching)
 {
     //New Frame
     ImGuiIO& io = ImGui::GetIO();
@@ -85,6 +85,13 @@ void drawEditor(Framebuffer& fbo)
         {
             ImGui::Text("Fps %.1f", ImGui::GetIO().Framerate);
 
+            ImGui::Text("Samples %d", rayMarching.getCurrentSample());
+
+            if(ImGui::DragFloat3("Camera", &rayMarching.getCamera()._eye[0], 0.1f, -10.0f, 10.0f))
+            {
+                rayMarching.NeedUpdate();
+                rayMarching.getCamera().updateCamera();
+            }
             ImGui::EndTabBar();
         }
     }
@@ -97,7 +104,7 @@ void drawEditor(Framebuffer& fbo)
         //ImVec2 wsize = ImGui::GetContentRegionAvail();
         ImVec2 wsize = { 600, 480 };
 
-        ImGui::Image((ImTextureID)fbo.getTextureId(), wsize, ImVec2(0, 1), ImVec2(1, 0));
+        ImGui::Image((ImTextureID)rayMarching.getFbo().getTextureId(), wsize, ImVec2(0, 1), ImVec2(1, 0));
     }
     ImGui::End();
 

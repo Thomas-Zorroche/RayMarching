@@ -3,10 +3,10 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#include "Framebuffer.hpp"
+#include "RayMarching.hpp"
 
 void initEditor(GLFWwindow* window);
 
-void drawEditor(Framebuffer& fbo);
+void drawEditor(RayMarchingManager& rayMarching);
 
 void renderEditor();
