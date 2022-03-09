@@ -165,75 +165,86 @@ void RayMarchingManager::update()
     
     int step = maxSamples - currentSample;
 
-    //#pragma omp for shared(step) private(pixelID, rayID)
-    for (int bufferID = 0; bufferID + 2 < _bufferSize; bufferID += step * 3)
+    int idThread;
+    int NUM_THREADS = 15;
+    int size_per_thread = _bufferSize / NUM_THREADS;
+
+    #pragma omp parallel shared(step) private(idThread, pixelID, rayID, sceneInfo) num_threads(NUM_THREADS)
     {
-        bool hit = false;
-        float rayDst = 0;
-        int marchSteps = 0;
+        idThread = omp_get_thread_num(); // Get current thread number
+        pixelID = idThread * size_per_thread / 3;
+        rayID = idThread * size_per_thread / (step * 3);
 
-        Ray ray;
-        if (_needToUpdateRays)
+        #pragma omp parallel for num_threads(NUM_THREADS)
+        for (int bufferID = size_per_thread * idThread; bufferID < _bufferSize; bufferID += step * 3) 
         {
-            int idPixelX = pixelID % _width;
-            int idPixelY = pixelID / _width;
-            glm::vec2 uv = glm::vec2(idPixelX / (float)_width, idPixelY / (float)_height) * glm::vec2(2.f, 2.f) - glm::vec2(1.f, 1.f);
-            ray = createCameraRay(uv);
-            _rays.push_back(ray);
-        }
-        else
-        {
-            ray = _rays[rayID];
-        }
+            bool hit = false;
+            float rayDst = 0;
+            int marchSteps = 0;
 
-        while (rayDst < _settings.maxDst)
-        {
-            marchSteps++;
-            sceneInfo = getSceneInfo(ray.origin);
+            //Ray ray;
+            //if (_needToUpdateRays)
+            //{
+                int idPixelX = pixelID % _width;
+                int idPixelY = pixelID / _width;
+                glm::vec2 uv = glm::vec2(idPixelX / (float)_width, idPixelY / (float)_height) * glm::vec2(2.f, 2.f) - glm::vec2(1.f, 1.f);
+                Ray ray = createCameraRay(uv);
+                //_rays.push_back(ray);
+            //}
+            //else
+            //{
+            //    ray = _rays[rayID];
+            //}
 
-            float dst = sceneInfo.w;
-            if (dst < _settings.epsilon)
+            while (rayDst < _settings.maxDst)
             {
-                //std::cout << i << " - " << marchSteps << std::endl;
+                marchSteps++;
+                sceneInfo = getSceneInfo(ray.origin);
 
-                glm::vec3 pointOnSurface = ray.origin + ray.direction * dst;
-                glm::vec3 normal = estimateNormal(pointOnSurface - ray.direction * _settings.epsilon);
-                glm::vec3 lightDir = (_settings.positionLight) ? normalize(_settings.Light - ray.origin) : -_settings.Light;
-                float lighting = saturate(saturate(dot(normal, lightDir)));
-                //float lighting = 1.0f;
-                glm::vec3 col = sceneInfo;
+                float dst = sceneInfo.w;
+                if (dst < _settings.epsilon)
+                {
+                    //std::cout << i << " - " << marchSteps << std::endl;
 
-                // Shadow
-                //float3 offsetPos = pointOnSurface + normal * shadowBias;
-                //float3 dirToLight = (positionLight) ? normalize(_Light - offsetPos) : -_Light;
+                    glm::vec3 pointOnSurface = ray.origin + ray.direction * dst;
+                    glm::vec3 normal = estimateNormal(pointOnSurface - ray.direction * _settings.epsilon);
+                    glm::vec3 lightDir = (_settings.positionLight) ? normalize(_settings.Light - ray.origin) : -_settings.Light;
+                    float lighting = saturate(saturate(dot(normal, lightDir)));
+                    //float lighting = 1.0f;
+                    glm::vec3 col = sceneInfo;
 
-                //ray.origin = offsetPos;
-                //ray.direction = dirToLight;
+                    // Shadow
+                    //float3 offsetPos = pointOnSurface + normal * shadowBias;
+                    //float3 dirToLight = (positionLight) ? normalize(_Light - offsetPos) : -_Light;
 
-                //float dstToLight = (positionLight) ? distance(offsetPos, _Light) : maxDst;
-                //float shadow = CalculateShadow(ray, dstToLight);
+                    //ray.origin = offsetPos;
+                    //ray.direction = dirToLight;
 
-                _buffer[bufferID] = (unsigned char)(col.r * lighting);
-                _buffer[bufferID + 1] = (unsigned char)(col.g * lighting);
-                _buffer[bufferID + 2] = (unsigned char)(col.b * lighting);
-                hit = true;
+                    //float dstToLight = (positionLight) ? distance(offsetPos, _Light) : maxDst;
+                    //float shadow = CalculateShadow(ray, dstToLight);
 
-                break;
+                    _buffer[bufferID] = (unsigned char)(col.r * lighting);
+                    _buffer[bufferID + 1] = (unsigned char)(col.g * lighting);
+                    _buffer[bufferID + 2] = (unsigned char)(col.b * lighting);
+                    hit = true;
+
+                    break;
+                }
+
+                ray.origin += ray.direction * dst;
+                rayDst += dst;
             }
 
-            ray.origin += ray.direction * dst;
-            rayDst += dst;
-        }
+            if (!hit)
+            {
+                _buffer[bufferID] =    (unsigned char)(120);
+                _buffer[bufferID + 1] = (unsigned char)(120);
+                _buffer[bufferID + 2] = (unsigned char)(120);
+            }
 
-        if (!hit)
-        {
-            _buffer[bufferID] =    (unsigned char)(120);
-            _buffer[bufferID + 1] = (unsigned char)(120);
-            _buffer[bufferID + 2] = (unsigned char)(120);
+            pixelID += step;
+            rayID++;
         }
-
-        pixelID += step;
-        rayID++;
     }
 
     if (_needToUpdateRays)
