@@ -38,7 +38,6 @@ int main(void)
     int viewer3DWidth = 600;
     int viewer3DHeight = 400;
     RayMarchingManager rayMarching(viewer3DWidth, viewer3DHeight);
-    Framebuffer fbo = Framebuffer(viewer3DWidth, viewer3DHeight, rayMarching.getBuffer());
 
     // Initialize ImGui
     initEditor(window);
@@ -52,9 +51,7 @@ int main(void)
 
         rayMarching.update();
 
-        fbo.update(rayMarching.getBuffer());
-
-        drawEditor(fbo);
+        drawEditor(rayMarching.getFbo());
         renderEditor();
 
         /* Swap front and back buffers */
@@ -64,7 +61,7 @@ int main(void)
         glfwPollEvents();
     }
 
-    fbo.free();
+    rayMarching.free();
     glfwTerminate();
     return 0;
 }

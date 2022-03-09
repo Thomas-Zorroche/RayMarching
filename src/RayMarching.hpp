@@ -4,13 +4,14 @@
 #include <vector>
 
 #include "CameraManager.hpp"
+#include "Framebuffer.hpp"
 
 struct Ray
 {
     glm::vec3 origin;
     glm::vec3 direction;
 
-    Ray(glm::vec3 o, glm::vec3 d)
+    Ray(glm::vec3 o = glm::vec3(0), glm::vec3 d = glm::vec3(0))
         : origin(o), direction(d) {}
 };
 
@@ -32,17 +33,14 @@ struct Shape
 
 struct RayMarchingSettings
 {
-	const float maxDst = 5.0f;
-	const float epsilon = 0.5f;
+	const float maxDst = 6.0f;
+	const float epsilon = 0.01f;
 
 	bool positionLight = false;
 	glm::vec3 Light = { 0.9, 0.9, 0.9 };
 
-	const int numShapes = 1;
+	const int numShapes = 2;
 	std::vector<Shape> shapes;
-	
-	
-
 };
 
 class RayMarchingManager
@@ -58,25 +56,38 @@ public:
 
     Ray createCameraRay(glm::vec2 uv);
 
+    void free();
+
+    Framebuffer& getFbo() { return _fbo; }
 
     const std::vector<unsigned char>& getBuffer() const {
         return _buffer;
     }
 
 private:
+
+    void updateRays();
+
+private:
     RayMarchingSettings _settings;
 
     Camera _camera;
-
+    
     int _width;
     int _height;
     int _nbpixels;
     int _bufferSize;
+    std::vector<unsigned char> _buffer;
+
+    Framebuffer _fbo;
 
     glm::vec3 _rayOrigin;
 
-    std::vector<unsigned char> _buffer;
+    std::vector<Ray> _rays;
 
     int currentSample = 0;
+    const int maxSamples = 10;
+
+    bool _needToUpdateRays = true; // If camera move, we must compute new rays
 };
 

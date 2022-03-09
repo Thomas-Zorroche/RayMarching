@@ -68,27 +68,27 @@ glm::vec4 Combine(float dstA, float dstB, glm::vec3 colorA, glm::vec3 colorB, in
 }
 
 RayMarchingManager::RayMarchingManager(int width, int height)
-    : _camera(Camera(width, height))
+    : _camera(Camera(width, height)),
+    _width(width),
+    _height(height),
+    _nbpixels(_width * _height),
+    _bufferSize(_nbpixels * 3 /* RGB */),
+    _buffer(std::vector<unsigned char>(_bufferSize)),
+    _fbo(Framebuffer(width, height, _buffer))
 {
-    _width = width;
-    _height = height;
-    _nbpixels = _width * _height;
-    _bufferSize = _nbpixels * 3 /* RGB */;
-
-    _buffer = std::vector<unsigned char>(_bufferSize);
-
     int value = 125;
     for (int i = 0; i < _bufferSize; ++i)
     {
         _buffer[i] = (unsigned char)(value);
     }
 
-    _settings.shapes.push_back({
+    _settings.shapes = std::vector<Shape>({
         //    position   size       color
-        Shape({0, 0, 0}, { 1, 1, 1 }, {255, 150, 0})
+        Shape({0, 0, 0}, { 1, 1, 1 }, {255, 150, 0}),
+        Shape({1, 1, 0}, { .75, .75, .75}, {0, 150, 0})
     });
 
-    _rayOrigin = _camera.getCameraToWorld() * glm::vec4(0, 0, 0, 1); // TODO
+    _rayOrigin = _camera.getCameraToWorld() * glm::vec4(0, 0, 0, 1); 
 }
 
 
@@ -126,6 +126,7 @@ glm::vec4 RayMarchingManager::getSceneInfo(glm::vec3 eye)
         glm::vec4 globalCombined = Combine(globalDst, localDst, globalColour, localColour, /*shape.operation*/0, /*shape.blendStrength*/0);
         globalColour = globalCombined;
         globalDst = globalCombined.w;
+
     }
 
     return glm::vec4(globalColour, globalDst);
@@ -139,21 +140,50 @@ glm::vec3 RayMarchingManager::estimateNormal(glm::vec3 p)
     return normalize(glm::vec3(x, y, z));
 }
 
+void RayMarchingManager::updateRays()
+{
+
+}
+
+
 void RayMarchingManager::update()
 {
+    if (currentSample == maxSamples)
+    {
+        return;
+    }
+
+    if (_needToUpdateRays)
+    {
+        _rays.empty();
+    }
+
     glm::vec4 sceneInfo;
     int pixelID = 0;
+    int rayID = 0;
+    
+    _buffer.empty();
 
-    int step = 10;
-    for (int bufferID = 0; bufferID < _bufferSize; bufferID += step * 3)
+    int step = maxSamples - currentSample;
+    for (int bufferID = 0; bufferID + 2 < _bufferSize; bufferID += step * 3)
     {
         float rayDst = 0;
         int marchSteps = 0;
 
-        int idPixelX = pixelID % _width;
-        int idPixelY = pixelID / _width;
-        glm::vec2 uv = glm::vec2(idPixelX / (float)_width, idPixelY / (float)_height) * glm::vec2(2.f, 2.f) - glm::vec2(1.f, 1.f);
-        Ray ray = createCameraRay(uv);
+        Ray ray;
+        if (_needToUpdateRays)
+        {
+            int idPixelX = pixelID % _width;
+            int idPixelY = pixelID / _width;
+            glm::vec2 uv = glm::vec2(idPixelX / (float)_width, idPixelY / (float)_height) * glm::vec2(2.f, 2.f) - glm::vec2(1.f, 1.f);
+            ray = createCameraRay(uv);
+            _rays.push_back(ray);
+        }
+        else
+        {
+            ray = _rays[rayID];
+        }
+
         while (rayDst < _settings.maxDst)
         {
             marchSteps++;
@@ -164,11 +194,11 @@ void RayMarchingManager::update()
             {
                 //std::cout << i << " - " << marchSteps << std::endl;
 
-                //glm::vec3 pointOnSurface = ray.origin + ray.direction * dst;
-                //glm::vec3 normal = estimateNormal(pointOnSurface - ray.direction * _settings.epsilon);
-                //glm::vec3 lightDir = (_settings.positionLight) ? normalize(_settings.Light - ray.origin) : -_settings.Light;
-                //float lighting = saturate(saturate(dot(normal, lightDir)));
-                float lighting = 1.0f;
+                glm::vec3 pointOnSurface = ray.origin + ray.direction * dst;
+                glm::vec3 normal = estimateNormal(pointOnSurface - ray.direction * _settings.epsilon);
+                glm::vec3 lightDir = (_settings.positionLight) ? normalize(_settings.Light - ray.origin) : -_settings.Light;
+                float lighting = saturate(saturate(dot(normal, lightDir)));
+                //float lighting = 1.0f;
                 glm::vec3 col = sceneInfo;
 
                 // Shadow
@@ -192,8 +222,22 @@ void RayMarchingManager::update()
             rayDst += dst;
         }
         pixelID += step;
+        rayID++;
     }
 
- /*   if (currentSample < 10)
-        currentSample++;*/
+    if (_needToUpdateRays)
+    {
+        //_needToUpdateRays = false;
+    }
+
+    if (currentSample < maxSamples)
+        currentSample++;
+
+    _fbo.update(_buffer);
+}
+
+
+void RayMarchingManager::free()
+{
+    _fbo.free();
 }
