@@ -2,6 +2,7 @@
 
 #include "glm/glm.hpp"
 #include <vector>
+#include <string>
 
 #include "CameraManager.hpp"
 #include "Framebuffer.hpp"
@@ -15,19 +16,26 @@ struct Ray
         : origin(o), direction(d) {}
 };
 
+enum class EOperation
+{
+    DEFAULT = 0,
+    BLEND = 1,
+};
+
 struct Shape
 {
     glm::vec3 position;
     glm::vec3 size;
     glm::vec3 color;
 
-    //int shapeType;
-    //int operation;
-    //float blendStrength;
-    //int numChildren;
+    std::string name = "shape";
 
-    Shape(glm::vec3 p, glm::vec3 s, glm::vec3 c)
-        : position(p), size(s), color(c) {}
+    //int shapeType;
+    EOperation operation = EOperation::DEFAULT;
+    float blendStrength = 0.1f;
+
+    Shape(glm::vec3 p, glm::vec3 s, glm::vec3 c, const std::string& n)
+        : position(p), size(s), color(c), name(n) {}
 
 };
 
@@ -50,28 +58,38 @@ public:
 
     void update();
 
-    glm::vec3 estimateNormal(glm::vec3 p);
+    glm::vec3 estimateNormal(const glm::vec3& p);
 
-    glm::vec4 getSceneInfo(glm::vec3 eye);
+    glm::vec4 getSceneInfo(const glm::vec3& eye);
 
-    Ray createCameraRay(glm::vec2 uv);
+    Ray createCameraRay(const glm::vec2& uv);
 
     void free();
 
+    // Getters
     Framebuffer& getFbo() { return _fbo; }
     Camera& getCamera() { return _camera; }
-
     int getCurrentSample() const { return currentSample; }
+    int getNumShapes() const { return _settings.numShapes; }
+    const std::vector<Shape>& getShapes() const { return _settings.shapes; }
+    std::vector<Shape>& getShapes() { return _settings.shapes; }
+    const Shape& getShapeAtIndex(int index) const { return _settings.shapes[index]; }
+    Shape& getShapeAtIndex(int index) { return _settings.shapes[index]; }
+    const std::vector<unsigned char>& getBuffer() const { return _buffer; }
 
-    void NeedUpdate()
+    void UpdateView()
     {
         currentSample = 0;
         _rayOrigin = _camera.getCameraToWorld() * glm::vec4(0, 0, 0, 1);
+        _needToUpdateRays = true;
     }
 
-    const std::vector<unsigned char>& getBuffer() const {
-        return _buffer;
+    void UpdateScene()
+    {
+        currentSample = 0;
+        _needToUpdateRays = true;
     }
+
 
 private:
 

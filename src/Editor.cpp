@@ -1,13 +1,13 @@
 #include "Editor.hpp"
 
-
-
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_glfw.h"
 #include "imgui/imgui_impl_opengl3.h"
 
 
 static bool dockspaceOpen = true;
+static int selectedEntityID = -1;
+static bool updateAllShapes = true;
 
 
 void initEditor(GLFWwindow* window)
@@ -31,6 +31,15 @@ void drawEditor(RayMarchingManager& rayMarching)
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
+
+    static bool demo = false;
+    if (demo)
+    {
+        ImGui::ShowDemoWindow(&demo);
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        return;
+    }
 
     static bool opt_fullscreen = true;
     static bool opt_padding = false;
@@ -81,21 +90,88 @@ void drawEditor(RayMarchingManager& rayMarching)
     // Settings
     if (ImGui::Begin("Settings"))
     {
-        if (ImGui::BeginTabBar("MyTabBar"))
+         ImGui::Text("Fps %.1f", ImGui::GetIO().Framerate);
+         ImGui::Text("Samples : %d / 20", rayMarching.getCurrentSample());
+
+
+        if (ImGui::CollapsingHeader("Camera"))
         {
-            ImGui::Text("Fps %.1f", ImGui::GetIO().Framerate);
-
-            ImGui::Text("Samples %d", rayMarching.getCurrentSample());
-
             if(ImGui::DragFloat3("Camera", &rayMarching.getCamera()._eye[0], 0.1f, -10.0f, 10.0f))
             {
-                rayMarching.NeedUpdate();
+                rayMarching.UpdateView();
                 rayMarching.getCamera().updateCamera();
             }
-            ImGui::EndTabBar();
+
+        }
+
+
+        if (ImGui::CollapsingHeader("World Outliner", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            int shapesCount = 0;
+            for (const auto& shape : rayMarching.getShapes())
+            {
+                if (ImGui::Selectable(shape.name.c_str()))
+                {
+                    selectedEntityID = shapesCount;
+                }
+
+                shapesCount++;
+                if (shapesCount > 10)
+                {
+                    break;
+                }
+            }
+        }
+
+        if (selectedEntityID >= 0 && selectedEntityID < rayMarching.getNumShapes())
+        {
+            if (ImGui::CollapsingHeader(std::string("Shape - " + rayMarching.getShapeAtIndex(selectedEntityID).name).c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+            {
+                if (ImGui::DragFloat3("Location", &rayMarching.getShapeAtIndex(selectedEntityID).position[0], 0.1f, -10.0f, 10.0f))
+                {
+                    rayMarching.UpdateScene();
+                }
+                if (ImGui::DragFloat3("Scale", &rayMarching.getShapeAtIndex(selectedEntityID).size[0], 0.1f, -10.0f, 10.0f))
+                {
+                    rayMarching.UpdateScene();
+                }
+
+                if (ImGui::TreeNodeEx("Ray Marching", ImGuiTreeNodeFlags_DefaultOpen))
+                {
+                    ImGui::Checkbox("Update all shapes", &updateAllShapes);
+
+                    if (ImGui::Combo("Operation", &(int&)rayMarching.getShapeAtIndex(selectedEntityID).operation, "Default\0Blend\0\0"))
+                    {
+                        if (updateAllShapes)
+                        {
+                            for (auto& shape : rayMarching.getShapes())
+                            {
+                                shape.operation = rayMarching.getShapeAtIndex(selectedEntityID).operation;
+                            }
+                        }
+                        rayMarching.UpdateScene();
+                    }
+
+                    if (rayMarching.getShapeAtIndex(selectedEntityID).operation == EOperation::BLEND
+                        && ImGui::DragFloat("Blend Strength", &rayMarching.getShapeAtIndex(selectedEntityID).blendStrength, 0.01f, 0.0f, 1.0f))
+                    {
+                        if (updateAllShapes)
+                        {
+                            for (auto& shape : rayMarching.getShapes())
+                            {
+                                shape.blendStrength = rayMarching.getShapeAtIndex(selectedEntityID).blendStrength;
+                            }
+                        }
+                        rayMarching.UpdateScene();
+                    }
+
+                    ImGui::TreePop();
+                }
+            }
         }
     }
     ImGui::End(); // Settings
+
 
 
     // 3D Viewer

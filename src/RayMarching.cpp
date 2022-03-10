@@ -1,20 +1,33 @@
 #include "RayMarching.hpp"
 
 #include "glm/gtx/transform.hpp"
+#include "glm/gtx/compatibility.hpp"
+
 #include <omp.h>
 
 
+// Clamp between [0.0, 1.0]
 float saturate(float x)
 {
     return x > 1.f ? 1.f : (x < 0.f ? 0.f : x);
 }
 
-float SphereDistance(glm::vec3 eye, glm::vec3 centre, float radius) 
+float lerp(float start, float end, float t)
+{
+    return start * (1 - t) + end * t;
+}
+
+glm::vec3 lerp(const glm::vec3& start, const glm::vec3& end, float t)
+{
+    return start * (1 - t) + end * t;
+}
+
+float SphereDistance(const glm::vec3& eye, const glm::vec3& centre, float radius) 
 {
     return glm::distance(eye, centre) - radius;
 }
 
-float GetShapeDistance(Shape shape, glm::vec3 eye)
+float GetShapeDistance(const Shape& shape, const glm::vec3& eye)
 {
     return SphereDistance(eye, shape.position, shape.size.x);
 
@@ -31,23 +44,37 @@ float GetShapeDistance(Shape shape, glm::vec3 eye)
     //return maxDst;
 }
 
-glm::vec4 Combine(float dstA, float dstB, glm::vec3 colorA, glm::vec3 colorB, int operation, float blendStrength)
+// polynomial smooth min (k = 0.1);
+// from https://www.iquilezles.org/www/articles/smin/smin.htm
+glm::vec4 Blend(float a, float b, const glm::vec3& colA, const glm::vec3& colB, float k)
+{
+    float h = saturate(0.5f + 0.5f * (b - a) / k);
+    float blendDst = lerp(b, a, h) - k * h * (1.0f - h);
+    glm::vec3 blendCol = glm::lerp(colB, colA, h);
+    return glm::vec4(blendCol, blendDst);
+}
+
+glm::vec4 Combine(float dstA, float dstB, const glm::vec3& colorA, const glm::vec3& colorB, EOperation operation, float blendStrength)
 {
     float dst = dstA;
-    glm::vec3 colour = colorA;
+    glm::vec3 color = colorA;
 
-    if (operation == 0) {
+    switch (operation)
+    {
+    case EOperation::DEFAULT:
         if (dstB < dstA) {
             dst = dstB;
-            colour = colorB;
+            color = colorB;
         }
+        break;
+
+    case EOperation::BLEND:
+        glm::vec4 blend = Blend(dstA, dstB, colorA, colorB, blendStrength);
+        dst = blend.w;
+        color = glm::vec3(blend.x, blend.y, blend.z);
+        break;
     }
-    // Blend
-    //else if (operation == 1) {
-    //    glm::vec4 blend = Blend(dstA, dstB, colourA, colourB, blendStrength);
-    //    dst = blend.w;
-    //    colour = blend.xyz;
-    //}
+
     //// Cut
     //else if (operation == 2) {
     //    // max(a,-b)
@@ -65,7 +92,7 @@ glm::vec4 Combine(float dstA, float dstB, glm::vec3 colorA, glm::vec3 colorB, in
     //    }
     //}
 
-    return glm::vec4(colour, dst);
+    return glm::vec4(color, dst);
 }
 
 RayMarchingManager::RayMarchingManager(int width, int height)
@@ -85,15 +112,15 @@ RayMarchingManager::RayMarchingManager(int width, int height)
 
     _settings.shapes = std::vector<Shape>({
         //    position   size       color
-        Shape({0, 0, 0}, { 1, 1, 1 }, {255, 150, 0}),
-        Shape({1, 1, 0}, { .75, .75, .75}, {0, 150, 0})
+        Shape({0, 0, 0}, { 1, 1, 1 }, {255, 150, 0}, "Orange Sphere"),
+        Shape({1, 1, 0}, { .75, .75, .75}, {0, 150, 0}, "Green Sphere")
     });
 
     _rayOrigin = _camera.getCameraToWorld() * glm::vec4(0, 0, 0, 1); 
 }
 
 
-Ray RayMarchingManager::createCameraRay(glm::vec2 uv)
+Ray RayMarchingManager::createCameraRay(const glm::vec2& uv)
 {
     glm::vec3 direction = _camera.getCameraInverseProjection() * glm::vec4(uv, 0, 1);
     direction = _camera.getCameraToWorld() * glm::vec4(direction, 0);
@@ -101,17 +128,17 @@ Ray RayMarchingManager::createCameraRay(glm::vec2 uv)
     return Ray(_rayOrigin, direction);
 }
 
-glm::vec4 RayMarchingManager::getSceneInfo(glm::vec3 eye)
+glm::vec4 RayMarchingManager::getSceneInfo(const glm::vec3& eye)
 {
     float globalDst = _settings.maxDst;
     glm::vec3 globalColour = glm::vec3(1);
 
     for (int i = 0; i < _settings.numShapes; i++) {
-        Shape shape = _settings.shapes[i];
+        Shape& shape = _settings.shapes[i];
         //int numChildren = shape.numChildren;
 
         float localDst = GetShapeDistance(shape, eye);
-        glm::vec3 localColour = shape.color;
+        const glm::vec3& localColour = shape.color;
 
 
         //for (int j = 0; j < numChildren; j++) {
@@ -124,7 +151,7 @@ glm::vec4 RayMarchingManager::getSceneInfo(glm::vec3 eye)
         //}
         //i += numChildren; // skip over children in outer loop
 
-        glm::vec4 globalCombined = Combine(globalDst, localDst, globalColour, localColour, /*shape.operation*/0, /*shape.blendStrength*/0);
+        glm::vec4 globalCombined = Combine(globalDst, localDst, globalColour, localColour, shape.operation, shape.blendStrength);
         globalColour = globalCombined;
         globalDst = globalCombined.w;
 
@@ -133,7 +160,7 @@ glm::vec4 RayMarchingManager::getSceneInfo(glm::vec3 eye)
     return glm::vec4(globalColour, globalDst);
 }
 
-glm::vec3 RayMarchingManager::estimateNormal(glm::vec3 p)
+glm::vec3 RayMarchingManager::estimateNormal(const glm::vec3& p)
 {
     float x = getSceneInfo(glm::vec3(p.x + _settings.epsilon, p.y, p.z)).w - getSceneInfo(glm::vec3(p.x - _settings.epsilon, p.y, p.z)).w;
     float y = getSceneInfo(glm::vec3(p.x, p.y + _settings.epsilon, p.z)).w - getSceneInfo(glm::vec3(p.x, p.y - _settings.epsilon, p.z)).w;
