@@ -4,6 +4,7 @@
 #include "glm/gtx/compatibility.hpp"
 
 #include <omp.h>
+#include <iostream>
 
 
 // Clamp between [0.0, 1.0]
@@ -109,6 +110,11 @@ RayMarchingManager::RayMarchingManager(int width, int height)
     });
 
     _rayOrigin = _camera.getCameraToWorld() * glm::vec4(0, 0, 0, 1); 
+
+    for (size_t i = 0; i < 20; i++)
+    {
+        _rays.push_back(std::vector<Ray>(_nbpixels));
+    }
 }
 
 
@@ -201,19 +207,23 @@ void RayMarchingManager::update()
             float rayDst = 0;
             int marchSteps = 0;
 
-            //Ray ray;
-            //if (_needToUpdateRays)
-            //{
+            Ray ray;
+            if (_needToUpdateRays)
+            {
                 int idPixelX = pixelID % _width;
                 int idPixelY = pixelID / _width;
                 glm::vec2 uv = glm::vec2(idPixelX / (float)_width, idPixelY / (float)_height) * glm::vec2(2.f, 2.f) - glm::vec2(1.f, 1.f);
-                Ray ray = createCameraRay(uv);
-                //_rays.push_back(ray);
-            //}
-            //else
-            //{
-            //    ray = _rays[rayID];
-            //}
+                ray = createCameraRay(uv);
+                _rays[currentSample][rayID] = ray;
+                //if (bufferID % 1000 == 0)
+                //    std::cout << "CREATE RAY" << std::endl;
+            }
+            else
+            {
+                //if (bufferID % 1000 == 0)
+                //    std::cout << "USE RAY" << std::endl;
+                ray = _rays[currentSample][rayID];
+            }
 
             while (rayDst < _settings.maxDst)
             {
@@ -266,13 +276,14 @@ void RayMarchingManager::update()
         }
     }
 
-    if (_needToUpdateRays)
-    {
-        //_needToUpdateRays = false;
-    }
-
     if (currentSample < maxSamples)
+    {
         currentSample++;
+    }
+    else if (_needToUpdateRays)
+    {
+        _needToUpdateRays = false;
+    }
 
     _fbo.update(_buffer);
 }

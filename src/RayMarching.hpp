@@ -12,7 +12,7 @@ struct Ray
     glm::vec3 origin;
     glm::vec3 direction;
 
-    Ray(glm::vec3 o = glm::vec3(0), glm::vec3 d = glm::vec3(0))
+    Ray(const glm::vec3& o = glm::vec3(0), const glm::vec3& d = glm::vec3(0))
         : origin(o), direction(d) {}
 };
 
@@ -34,7 +34,7 @@ struct Shape
     EOperation operation = EOperation::DEFAULT;
     float blendStrength = 0.1f;
 
-    Shape(glm::vec3 p, glm::vec3 s, glm::vec3 c, const std::string& n)
+    Shape(const glm::vec3& p, const glm::vec3& s, const glm::vec3& c, const std::string& n)
         : position(p), size(s), color(c), name(n) {}
 
 };
@@ -91,7 +91,7 @@ public:
     void UpdateScene()
     {
         currentSample = 0;
-        _needToUpdateRays = true;
+        _needToUpdateRays = false;
     }
 
 
@@ -114,7 +114,7 @@ private:
 
     glm::vec3 _rayOrigin;
 
-    std::vector<Ray> _rays;
+    std::vector<std::vector<Ray> > _rays;
 
     int currentSample = 0;
     const int maxSamples = 20;
