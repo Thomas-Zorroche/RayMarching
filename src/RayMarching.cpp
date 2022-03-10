@@ -56,23 +56,15 @@ glm::vec4 Blend(float a, float b, const glm::vec3& colA, const glm::vec3& colB, 
 
 glm::vec4 Combine(float dstA, float dstB, const glm::vec3& colorA, const glm::vec3& colorB, EOperation operation, float blendStrength)
 {
-    float dst = dstA;
-    glm::vec3 color = colorA;
-
     switch (operation)
     {
     case EOperation::DEFAULT:
-        if (dstB < dstA) {
-            dst = dstB;
-            color = colorB;
+        if (dstB < dstA)
+        {
+            return glm::vec4(colorB, dstB);
         }
-        break;
-
     case EOperation::BLEND:
-        glm::vec4 blend = Blend(dstA, dstB, colorA, colorB, blendStrength);
-        dst = blend.w;
-        color = glm::vec3(blend.x, blend.y, blend.z);
-        break;
+        return(Blend(dstA, dstB, colorA, colorB, blendStrength));
     }
 
     //// Cut
@@ -92,7 +84,7 @@ glm::vec4 Combine(float dstA, float dstB, const glm::vec3& colorA, const glm::ve
     //    }
     //}
 
-    return glm::vec4(color, dst);
+    return glm::vec4(colorA, dstA);
 }
 
 RayMarchingManager::RayMarchingManager(int width, int height)
@@ -193,7 +185,7 @@ void RayMarchingManager::update()
     int step = maxSamples - currentSample;
 
     int idThread;
-    int NUM_THREADS = 15;
+    int NUM_THREADS = omp_get_max_threads();
     int size_per_thread = _bufferSize / NUM_THREADS;
 
     #pragma omp parallel shared(step) private(idThread, pixelID, rayID, sceneInfo) num_threads(NUM_THREADS)

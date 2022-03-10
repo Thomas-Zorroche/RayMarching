@@ -41,13 +41,13 @@ struct Shape
 
 struct RayMarchingSettings
 {
-	const float maxDst = 10.0f;
-	const float epsilon = 0.05f;
+	float maxDst = 10.0f;
+	float epsilon = 0.05f;
 
 	bool positionLight = false;
 	glm::vec3 Light = { 0.9, 0.9, 0.9 };
 
-	const int numShapes = 2;
+	int numShapes = 2;
 	std::vector<Shape> shapes;
 };
 
@@ -76,6 +76,10 @@ public:
     const Shape& getShapeAtIndex(int index) const { return _settings.shapes[index]; }
     Shape& getShapeAtIndex(int index) { return _settings.shapes[index]; }
     const std::vector<unsigned char>& getBuffer() const { return _buffer; }
+
+    // Ray Marching Settings
+    float& getEpsilon() { return _settings.epsilon; }
+    float& getMaxDistance() { return _settings.maxDst; }
 
     void UpdateView()
     {

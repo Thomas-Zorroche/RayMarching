@@ -4,6 +4,8 @@
 #include "imgui/imgui_impl_glfw.h"
 #include "imgui/imgui_impl_opengl3.h"
 
+#include <omp.h>
+
 
 static bool dockspaceOpen = true;
 static int selectedEntityID = -1;
@@ -90,9 +92,24 @@ void drawEditor(RayMarchingManager& rayMarching)
     // Settings
     if (ImGui::Begin("Settings"))
     {
-         ImGui::Text("Fps %.1f", ImGui::GetIO().Framerate);
-         ImGui::Text("Samples : %d / 20", rayMarching.getCurrentSample());
+        ImGui::Text("Fps %.1f", ImGui::GetIO().Framerate);
+        ImGui::Text("Samples : %d / 20", rayMarching.getCurrentSample());
+        ImGui::Text("Threads: %d", omp_get_max_threads());
 
+        ImGui::Separator();
+
+        if (ImGui::CollapsingHeader("Ray Marching", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            if (ImGui::DragFloat("Epsilon", &rayMarching.getEpsilon(), 0.01f, 0.01f, 1.0f))
+            {
+                rayMarching.UpdateScene();
+            }
+
+            if (ImGui::DragFloat("Max Distance", &rayMarching.getMaxDistance(), 0.1f, 0.0f, 30.0f))
+            {
+                rayMarching.UpdateScene();
+            }
+        }
 
         if (ImGui::CollapsingHeader("Camera"))
         {
@@ -101,9 +118,7 @@ void drawEditor(RayMarchingManager& rayMarching)
                 rayMarching.UpdateView();
                 rayMarching.getCamera().updateCamera();
             }
-
         }
-
 
         if (ImGui::CollapsingHeader("World Outliner", ImGuiTreeNodeFlags_DefaultOpen))
         {
@@ -131,12 +146,14 @@ void drawEditor(RayMarchingManager& rayMarching)
                 {
                     rayMarching.UpdateScene();
                 }
-                if (ImGui::DragFloat3("Scale", &rayMarching.getShapeAtIndex(selectedEntityID).size[0], 0.1f, -10.0f, 10.0f))
+                if (ImGui::DragFloat("Scale", &rayMarching.getShapeAtIndex(selectedEntityID).size[0], 0.1f, 0.1f, 10.0f))
                 {
+                    rayMarching.getShapeAtIndex(selectedEntityID).size[1] = rayMarching.getShapeAtIndex(selectedEntityID).size[0];
+                    rayMarching.getShapeAtIndex(selectedEntityID).size[2] = rayMarching.getShapeAtIndex(selectedEntityID).size[0];
                     rayMarching.UpdateScene();
                 }
 
-                if (ImGui::TreeNodeEx("Ray Marching", ImGuiTreeNodeFlags_DefaultOpen))
+                if (ImGui::TreeNodeEx("Operation Settings", ImGuiTreeNodeFlags_DefaultOpen))
                 {
                     ImGui::Checkbox("Update all shapes", &updateAllShapes);
 
