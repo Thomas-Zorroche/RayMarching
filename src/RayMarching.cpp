@@ -204,7 +204,7 @@ void RayMarchingManager::update()
         for (int bufferID = size_per_thread * idThread; bufferID < _bufferSize; bufferID += step * 3) 
         {
             bool hit = false;
-            float rayDst = 0;
+            float rayDst = 1;
             int marchSteps = 0;
 
             Ray ray;

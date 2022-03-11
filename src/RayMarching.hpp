@@ -7,6 +7,8 @@
 #include "CameraManager.hpp"
 #include "Framebuffer.hpp"
 
+#include "c2ga/Mvec.hpp"
+
 struct Ray
 {
     glm::vec3 origin;
@@ -29,6 +31,8 @@ struct Shape
     glm::vec3 color;
 
     std::string name = "shape";
+
+    c2ga::Mvec<double> pos;
 
     //int shapeType;
     EOperation operation = EOperation::DEFAULT;
