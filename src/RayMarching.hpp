@@ -7,15 +7,20 @@
 #include "CameraManager.hpp"
 #include "Framebuffer.hpp"
 
-#include "c3ga/Mvec.hpp"
+#include <klein/klein.hpp>
 
 struct Ray
 {
+    kln::point org;
+
     glm::vec3 origin;
     glm::vec3 direction;
 
     Ray(const glm::vec3& o = glm::vec3(0), const glm::vec3& d = glm::vec3(0))
-        : origin(o), direction(d) {}
+        : origin(o), direction(d), org(origin.x, origin.y, origin.z)
+    {
+       
+    }
 };
 
 enum class EOperation
@@ -26,10 +31,12 @@ enum class EOperation
 
 struct Shape
 {
+    kln::point center;
+
     glm::vec3 position;
-    //c3ga::Mvec<double> position;
     glm::vec3 size;
     glm::vec3 color;
+
 
     std::string name = "shape";
 
@@ -38,7 +45,9 @@ struct Shape
     float blendStrength = 0.1f;
 
     Shape(const glm::vec3& p, const glm::vec3& s, const glm::vec3& c, const std::string& n)
-        : position(p), size(s), color(c), name(n) {}
+        : position(p), size(s), color(c), name(n), center(position.x, position.y, position.z)
+    {
+    }
 
 };
 
@@ -50,7 +59,7 @@ struct RayMarchingSettings
 	bool positionLight = false;
 	glm::vec3 Light = { 0.9, 0.9, 0.9 };
 
-	int numShapes = 2;
+	int numShapes = 1;
 	std::vector<Shape> shapes;
 };
 
@@ -63,7 +72,7 @@ public:
 
     glm::vec3 estimateNormal(const glm::vec3& p);
 
-    glm::vec4 getSceneInfo(const glm::vec3& eye);
+    glm::vec4 getSceneInfo(const Ray& eyeRay);
 
     Ray createCameraRay(const glm::vec2& uv);
 
@@ -120,7 +129,7 @@ private:
     std::vector<std::vector<Ray> > _rays;
 
     int currentSample = 0;
-    const int maxSamples = 20;
+    const int maxSamples = 1;
 
     bool _needToUpdateRays = true; // If camera move, we must compute new rays
 };

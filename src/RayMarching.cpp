@@ -3,6 +3,7 @@
 #include "glm/gtx/transform.hpp"
 #include "glm/gtx/compatibility.hpp"
 
+
 #include <omp.h>
 #include <iostream>
 
@@ -28,12 +29,14 @@ float SphereDistance(const glm::vec3& eye, const glm::vec3& centre, float radius
     return glm::distance(eye, centre) - radius;
 }
 
-float GetShapeDistance(const Shape& shape, const glm::vec3& eye)
+float GetShapeDistance(const Shape& shape, const Ray& eye)
 {
-    return SphereDistance(eye, shape.position, shape.size.x);
-
-    //return 
-
+   //return SphereDistance(eye.origin, shape.position, shape.size.x);
+   kln::line line = eye.org & shape.center;
+   float dst = line.norm() - shape.size.x;
+   
+   return dst;
+    
     //if (shape.shapeType == 0) {
     //    return SphereDistance(eye, shape.position, shape.size.x);
     //}
@@ -108,13 +111,15 @@ RayMarchingManager::RayMarchingManager(int width, int height)
     _settings.shapes = std::vector<Shape>({
         //    position   size       color
         Shape({0, 0, 0}, { 1, 1, 1 }, {255, 150, 0}, "Orange Sphere"),
-        Shape({1, 1, 0}, { .75, .75, .75}, {0, 150, 0}, "Green Sphere")
+        //Shape({1, 1, 0}, { .75, .75, .75}, {0, 150, 0}, "Green Sphere")
     });
 
     _rayOrigin = _camera.getCameraToWorld() * glm::vec4(0, 0, 0, 1); 
 
-    for (size_t i = 0; i < 20; i++)
+    for (size_t i = currentSample; i < maxSamples; i++)
     {
+        std::cout << "initialize rays ratio : " << i/ (double)maxSamples << std::endl;
+
         _rays.push_back(std::vector<Ray>(_nbpixels));
     }
 }
@@ -128,7 +133,7 @@ Ray RayMarchingManager::createCameraRay(const glm::vec2& uv)
     return Ray(_rayOrigin, direction);
 }
 
-glm::vec4 RayMarchingManager::getSceneInfo(const glm::vec3& eye)
+glm::vec4 RayMarchingManager::getSceneInfo(const Ray& eye)
 {
     float globalDst = _settings.maxDst;
     glm::vec3 globalColour = glm::vec3(1);
@@ -209,6 +214,11 @@ void RayMarchingManager::update()
             float rayDst = 1;
             int marchSteps = 0;
 
+            if (bufferID % 1000 == 0)
+            {
+                //std::cout << "pixel ratio : " << bufferID / (double)_bufferSize << std::endl;
+            }
+
             Ray ray;
             if (_needToUpdateRays)
             {
@@ -230,7 +240,7 @@ void RayMarchingManager::update()
             while (rayDst < _settings.maxDst)
             {
                 marchSteps++;
-                sceneInfo = getSceneInfo(ray.origin);
+                sceneInfo = getSceneInfo(ray);
 
                 float dst = sceneInfo.w;
                 if (dst < _settings.epsilon)
@@ -263,6 +273,7 @@ void RayMarchingManager::update()
                 }
 
                 ray.origin += ray.direction * dst;
+                ray.org = { ray.origin.x, ray.origin.y, ray.origin.z };
                 rayDst += dst;
             }
 

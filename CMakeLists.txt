@@ -36,43 +36,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 # ////////////////////////// LIBRAIRIES ///////////////////////////////////////
 # /////////////////////////////////////////////////////////////////////////////
 
-# Require Eigen
-find_package(Eigen REQUIRED)
-if(${EIGEN3_FOUND})
-    message(STATUS "lib EIGEN3 found")
-    message(STATUS "  version " ${EIGEN3_VERSION_STRING})
-    message(STATUS "  include " ${EIGEN3_INCLUDE_DIR})
-else()
-    include_directories("C:/dev/lib/Eigen3") # manually specify the include location
-endif()
-
-# Require lib c3ga
-find_package(C3GA)
-if(${C3GA_FOUND})
-    message(STATUS "lib C3GA found")
-    message(STATUS "  include " ${C3GA_INCLUDE_DIRS})
-    message(STATUS "  lib     " ${C3GA_LIBRARIES})
-else()
-    message(STATUS "lib C3GA should be set manually, please uncomment the commented lines in the CMakeLists.txt file")
-    set(C3GA_INCLUDE_DIRS "./include")
-    set(C3GA_LIBRARIES "./lib/c3ga.lib")
-
-    # for manual setting, check if valid
-    if(EXISTS "${C3GA}")
-        message(STATUS "include for lib c3ga found: ${C3GA_INCLUDE_DIRS}" )
-    else()
-        message(FATAL_ERROR "include for lib c3ga invalid or not found: ${C3GA_INCLUDE_DIRS}" )
-    endif()
-
-    # for manual setting, check if valid
-    if(EXISTS "${C3GA}")
-        message(STATUS "library c3ga found: ${C3GA_LIBRARIES}" )
-    else()
-        message(FATAL_ERROR "library c3ga not found: ${C3GA_LIBRARIES}" )
-    endif()
-endif()
-
-
 link_directories(${CMAKE_SOURCE_DIR}/lib ${CMAKE_GLRENDERER_DIR}/install ${CMAKE_IMBRIDGE_DIR}/install)
 
 # includes
