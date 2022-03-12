@@ -24,18 +24,17 @@ glm::vec3 lerp(const glm::vec3& start, const glm::vec3& end, float t)
     return start * (1 - t) + end * t;
 }
 
-float SphereDistance(const glm::vec3& eye, const glm::vec3& centre, float radius) 
+float RayMarchingManager::GetShapeDistance(const Shape& shape, const Ray& eye)
 {
-    return glm::distance(eye, centre) - radius;
-}
-
-float GetShapeDistance(const Shape& shape, const Ray& eye)
-{
-   //return SphereDistance(eye.origin, shape.position, shape.size.x);
-   kln::line line = eye.org & shape.center;
-   float dst = line.norm() - shape.size.x;
-   
-   return dst;
+    if (_settings.useP3GA)
+    {
+       kln::line line = eye.org & shape.center;
+       return line.norm() - shape.size.x;
+    }
+    else
+    {
+        return glm::distance(eye.origin, shape.position) - shape.size.x;
+    }
     
     //if (shape.shapeType == 0) {
     //    return SphereDistance(eye, shape.position, shape.size.x);
@@ -140,26 +139,13 @@ glm::vec4 RayMarchingManager::getSceneInfo(const Ray& eye)
 
     for (int i = 0; i < _settings.numShapes; i++) {
         Shape& shape = _settings.shapes[i];
-        //int numChildren = shape.numChildren;
 
         float localDst = GetShapeDistance(shape, eye);
         const glm::vec3& localColour = shape.color;
 
-
-        //for (int j = 0; j < numChildren; j++) {
-        //    Shape childShape = shapes[i + j + 1];
-        //    float childDst = GetShapeDistance(childShape, eye);
-
-        //    glm::vec4 combined = Combine(localDst, childDst, localColour, childShape.colour, childShape.operation, childShape.blendStrength);
-        //    localColour = combined;
-        //    localDst = combined.w;
-        //}
-        //i += numChildren; // skip over children in outer loop
-
         glm::vec4 globalCombined = Combine(globalDst, localDst, globalColour, localColour, shape.operation, shape.blendStrength);
         globalColour = globalCombined;
         globalDst = globalCombined.w;
-
     }
 
     return glm::vec4(globalColour, globalDst);
@@ -171,11 +157,6 @@ glm::vec3 RayMarchingManager::estimateNormal(const glm::vec3& p)
     float y = getSceneInfo(glm::vec3(p.x, p.y + _settings.epsilon, p.z)).w - getSceneInfo(glm::vec3(p.x, p.y - _settings.epsilon, p.z)).w;
     float z = getSceneInfo(glm::vec3(p.x, p.y, p.z + _settings.epsilon)).w - getSceneInfo(glm::vec3(p.x, p.y, p.z - _settings.epsilon)).w;
     return normalize(glm::vec3(x, y, z));
-}
-
-void RayMarchingManager::updateRays()
-{
-
 }
 
 
@@ -214,11 +195,6 @@ void RayMarchingManager::update()
             float rayDst = 1;
             int marchSteps = 0;
 
-            if (bufferID % 1000 == 0)
-            {
-                //std::cout << "pixel ratio : " << bufferID / (double)_bufferSize << std::endl;
-            }
-
             Ray ray;
             if (_needToUpdateRays)
             {
@@ -227,13 +203,9 @@ void RayMarchingManager::update()
                 glm::vec2 uv = glm::vec2(idPixelX / (float)_width, idPixelY / (float)_height) * glm::vec2(2.f, 2.f) - glm::vec2(1.f, 1.f);
                 ray = createCameraRay(uv);
                 _rays[currentSample][rayID] = ray;
-                //if (bufferID % 1000 == 0)
-                //    std::cout << "CREATE RAY" << std::endl;
             }
             else
             {
-                //if (bufferID % 1000 == 0)
-                //    std::cout << "USE RAY" << std::endl;
                 ray = _rays[currentSample][rayID];
             }
 
@@ -245,8 +217,6 @@ void RayMarchingManager::update()
                 float dst = sceneInfo.w;
                 if (dst < _settings.epsilon)
                 {
-                    //std::cout << i << " - " << marchSteps << std::endl;
-
                     glm::vec3 pointOnSurface = ray.origin + ray.direction * dst;
                     glm::vec3 normal = estimateNormal(pointOnSurface - ray.direction * _settings.epsilon);
                     glm::vec3 lightDir = (_settings.positionLight) ? normalize(_settings.Light - ray.origin) : -_settings.Light;

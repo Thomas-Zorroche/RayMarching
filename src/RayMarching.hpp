@@ -11,10 +11,9 @@
 
 struct Ray
 {
-    kln::point org;
-
     glm::vec3 origin;
     glm::vec3 direction;
+    kln::point org;
 
     Ray(const glm::vec3& o = glm::vec3(0), const glm::vec3& d = glm::vec3(0))
         : origin(o), direction(d), org(origin.x, origin.y, origin.z)
@@ -31,12 +30,11 @@ enum class EOperation
 
 struct Shape
 {
-    kln::point center;
-
     glm::vec3 position;
     glm::vec3 size;
     glm::vec3 color;
 
+    kln::point center;
 
     std::string name = "shape";
 
@@ -61,6 +59,8 @@ struct RayMarchingSettings
 
 	int numShapes = 1;
 	std::vector<Shape> shapes;
+
+    bool useP3GA = true;
 };
 
 class RayMarchingManager
@@ -92,6 +92,7 @@ public:
     // Ray Marching Settings
     float& getEpsilon() { return _settings.epsilon; }
     float& getMaxDistance() { return _settings.maxDst; }
+    bool& getUsePGA() { return _settings.useP3GA; }
 
     void UpdateView()
     {
@@ -108,8 +109,7 @@ public:
 
 
 private:
-
-    void updateRays();
+    float GetShapeDistance(const Shape& shape, const Ray& eye);
 
 private:
     RayMarchingSettings _settings;

@@ -6,6 +6,8 @@
 
 #include <omp.h>
 
+#include "klein/klein.hpp"
+
 
 static bool dockspaceOpen = true;
 static int selectedEntityID = -1;
@@ -109,6 +111,11 @@ void drawEditor(RayMarchingManager& rayMarching)
             {
                 rayMarching.UpdateScene();
             }
+
+            if (ImGui::Checkbox("UsePGA", &rayMarching.getUsePGA()))
+            {
+                rayMarching.UpdateScene();
+            }
         }
 
         if (ImGui::CollapsingHeader("Camera"))
@@ -144,6 +151,12 @@ void drawEditor(RayMarchingManager& rayMarching)
             {
                 if (ImGui::DragFloat3("Location", &rayMarching.getShapeAtIndex(selectedEntityID).position[0], 0.1f, -10.0f, 10.0f))
                 {
+                    rayMarching.getShapeAtIndex(selectedEntityID).center = {
+                        rayMarching.getShapeAtIndex(selectedEntityID).position.x,
+                        rayMarching.getShapeAtIndex(selectedEntityID).position.y,
+                        rayMarching.getShapeAtIndex(selectedEntityID).position.z
+                    };
+
                     rayMarching.UpdateScene();
                 }
                 if (ImGui::DragFloat("Scale", &rayMarching.getShapeAtIndex(selectedEntityID).size[0], 0.1f, 0.1f, 10.0f))
