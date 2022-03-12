@@ -7,7 +7,7 @@
 #include "CameraManager.hpp"
 #include "Framebuffer.hpp"
 
-#include "c2ga/Mvec.hpp"
+#include "c3ga/Mvec.hpp"
 
 struct Ray
 {
@@ -27,12 +27,11 @@ enum class EOperation
 struct Shape
 {
     glm::vec3 position;
+    //c3ga::Mvec<double> position;
     glm::vec3 size;
     glm::vec3 color;
 
     std::string name = "shape";
-
-    c2ga::Mvec<double> pos;
 
     //int shapeType;
     EOperation operation = EOperation::DEFAULT;

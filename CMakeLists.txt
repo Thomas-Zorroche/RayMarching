@@ -46,29 +46,29 @@ else()
     include_directories("C:/dev/lib/Eigen3") # manually specify the include location
 endif()
 
-# Require lib c2ga
-find_package(C2GA)
-if(${C2GA_FOUND})
-    message(STATUS "lib C2GA found")
-    message(STATUS "  include " ${C2GA_INCLUDE_DIRS})
-    message(STATUS "  lib     " ${C2GA_LIBRARIES})
+# Require lib c3ga
+find_package(C3GA)
+if(${C3GA_FOUND})
+    message(STATUS "lib C3GA found")
+    message(STATUS "  include " ${C3GA_INCLUDE_DIRS})
+    message(STATUS "  lib     " ${C3GA_LIBRARIES})
 else()
-    message(STATUS "lib C2GA should be set manually, please uncomment the commented lines in the CMakeLists.txt file")
-    set(C2GA_INCLUDE_DIRS "./lib/garamon_c2ga/src/")
-    set(C2GA_LIBRARIES "./lib/garamon_c2ga/build/c2ga.lib")
+    message(STATUS "lib C3GA should be set manually, please uncomment the commented lines in the CMakeLists.txt file")
+    set(C3GA_INCLUDE_DIRS "./include")
+    set(C3GA_LIBRARIES "./lib/c3ga.lib")
 
     # for manual setting, check if valid
-    if(EXISTS "${C2GA_INCLUDE_DIRS}")
-        message(STATUS "include for lib c2ga found: ${C2GA_INCLUDE_DIRS}" )
+    if(EXISTS "${C3GA}")
+        message(STATUS "include for lib c3ga found: ${C3GA_INCLUDE_DIRS}" )
     else()
-        message(FATAL_ERROR "include for lib c2ga invalid or not found: ${C2GA_INCLUDE_DIRS}" )
+        message(FATAL_ERROR "include for lib c3ga invalid or not found: ${C3GA_INCLUDE_DIRS}" )
     endif()
 
     # for manual setting, check if valid
-    if(EXISTS "${C2GA_LIBRARIES}")
-        message(STATUS "library c2ga found: ${C2GA_LIBRARIES}" )
+    if(EXISTS "${C3GA}")
+        message(STATUS "library c3ga found: ${C3GA_LIBRARIES}" )
     else()
-        message(FATAL_ERROR "library c2ga not found: ${C2GA_LIBRARIES}" )
+        message(FATAL_ERROR "library c3ga not found: ${C3GA_LIBRARIES}" )
     endif()
 endif()
 

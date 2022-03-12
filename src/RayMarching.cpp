@@ -32,6 +32,8 @@ float GetShapeDistance(const Shape& shape, const glm::vec3& eye)
 {
     return SphereDistance(eye, shape.position, shape.size.x);
 
+    //return 
+
     //if (shape.shapeType == 0) {
     //    return SphereDistance(eye, shape.position, shape.size.x);
     //}
